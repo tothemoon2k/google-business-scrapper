@@ -1,8 +1,31 @@
-import * as cheerio from "cheerio";
-import puppeteerExtra from "puppeteer-extra";
-import stealthPlugin from "puppeteer-extra-plugin-stealth";
-import converter from "json-2-csv";
-import chromium from "@sparticuz/chromium";
+import * as readline from 'readline';
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+let state;
+let service; 
+let numOfLeads;
+
+//Ask questions about search in console
+rl.question('What state would you like to search? ', stateResp => {
+  state = stateResp;
+
+  rl.question('What service/niche should this search focus on? ', serviceResp => {
+    service = serviceResp;
+
+    rl.question('How many leads should this search gather? ', numResp => {
+      numOfLeads = numResp;
+
+      console.log(state, service, numOfLeads);
+      rl.close();
+    });
+
+  });
+
+});
 
 async function searchGoogleMaps() {
   try {
@@ -151,5 +174,3 @@ async function searchGoogleMaps() {
     console.log("error at googleMaps", error.message);
   }
 }
-
-searchGoogleMaps()
