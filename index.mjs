@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import puppeteerExtra from "puppeteer-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
+import converter from "json-2-csv";
 import chromium from "@sparticuz/chromium";
 
 async function searchGoogleMaps() {
@@ -142,8 +143,13 @@ async function searchGoogleMaps() {
 
     console.log(`time in seconds ${Math.floor((end - start) / 1000)}`);
 
+    const csv = await converter.json2csv(buisnesses)
+
+    console.log(csv)
     return buisnesses;
   } catch (error) {
     console.log("error at googleMaps", error.message);
   }
 }
+
+searchGoogleMaps()
