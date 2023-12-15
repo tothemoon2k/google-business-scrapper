@@ -4,10 +4,11 @@ import puppeteerExtra from "puppeteer-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth"; 
 import converter from "json-2-csv"; 
 import chromium from "@sparticuz/chromium";
-import axios from "axios";
-import pkg from 'zcs';
-const {   getByCityState } = pkg;
+import csv from "csvtojson";
+import fs from "fs";
 import * as readline from 'readline';
+
+let queries = []
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -26,7 +27,7 @@ let service;
 let numOfLeads;
 
 //Ask questions about search in console
-/*
+
 rl.question('What state would you like to search? ', stateResp => {
   state = stateResp;
 
@@ -36,16 +37,26 @@ rl.question('What state would you like to search? ', stateResp => {
     rl.question('How many leads should this search gather? ', numResp => {
       numOfLeads = numResp;
 
-      console.log(state, service, numOfLeads);
+      csv()
+        .fromFile('./uszips.csv') 
+        .then((json) => {
+          const objs = json.filter(r => r.state_name === state);
+          for(let obj of objs){
+            queries.push(`${service},${obj.zip},${obj.city},${obj.state_id},US`)
+          }
+          start(500)
+        });
+
       rl.close();
     });
 
   });
 
 });
-*/
 
-async function searchGoogleMaps(zip) {
+
+
+async function searchGoogleMaps(query) {
   try {
     const start = Date.now();
 
@@ -56,6 +67,7 @@ async function searchGoogleMaps(zip) {
       // headless: "new",
       // devtools: true,
       PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true,
+      executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     });
 
     // const browser = await puppeteerExtra.launch({
@@ -67,8 +79,6 @@ async function searchGoogleMaps(zip) {
     // });
 
     const page = await browser.newPage();
-
-    const query = `Auto repair shops austin`;
 
     try {
       await page.goto(
@@ -160,55 +170,59 @@ async function searchGoogleMaps(zip) {
 
       let phone = lastOfLast?.text()?.split("·")?.[1]?.trim()
 
-      if (!website && phone) {buisnesses.push({
-          email: `${url?.split('?')?.[0]?.split('ChI')?.[1]}@gmail.com`,
-          properties: [
-            { property: 'placeId', value: `ChI${url?.split('?')?.[0]?.split('ChI')?.[1]}` },
-            { property: 'address', value: firstOfLast?.text()?.split('·')?.[1]?.trim() },
-            { property: 'category', value: firstOfLast?.text()?.split('·')?.[0]?.trim() },
-            { property: 'phone', value: phone },
-            { property: 'googleUrl', value: url },
-            { property: 'businessName', value: storeName },
-            { property: 'ratingText', value: ratingText },
-            {
-              property: 'stars',
-              value: ratingText?.split('stars')?.[0]?.trim() ? Number(ratingText?.split('stars')?.[0]?.trim()) : null,
-            },
-            {
-              property: 'numberOfReviews',
-              value: ratingText
-                ?.split('stars')?.[1]
-                ?.replace('Reviews', '')
-                ?.trim()
-                ? Number(ratingText?.split('stars')?.[1]?.replace('Reviews', '')?.trim()) : null,
-            },
-          ],
-        });}
+      if (!website && phone) {
+
+        let max = 500; 
+      
+        let line = `${url?.split('?')?.[0]?.split('ChI')?.[1]}@gmail.com,ChI${url?.split("?")?.[0]?.split("ChI")?.[1]},${firstOfLast?.text()?.split("·")?.[1]?.trim()},${firstOfLast?.text()?.split("·")?.[0]?.trim()},${lastOfLast?.text()?.split("·")?.[1]?.trim()},${url},${storeName},${ratingText},${ratingText?.split("stars")?.[0]?.trim() ? Number(ratingText?.split("stars")?.[0]?.trim()): null}${ratingText?.split("stars")?.[1]?.replace("Reviews", "")?.trim() ? Number(ratingText?.split("stars")?.[1]?.replace("Reviews", "")?.trim()): null}\n`;
+      
+        fs.appendFile(`gatherings/Scraper-${state},${service},${max}.csv`, line, function (err) {
+          if (err){
+            console.log(err);
+          };
+          console.log('Updated!');
+        })
+      
+      }
       
     });
     const end = Date.now();
 
-    let test = JSON.stringify(buisnesses);
-    console.log(test);
+    console.log(buisnesses);
 
-    axios.post('https://api.hubapi.com/contacts/v1/contact/batch/', [ 
-      test
-    ], hdrs)
-      .then(function (response) {
-        console.log(response);
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-
-          return buisnesses;
-        } catch (error) {
-          console.log("error at googleMaps", error.message);
-        }
+    return buisnesses;
+    } catch (error) {
+      console.log("error at googleMaps", error.message);
+    }
 }
 
-searchGoogleMaps();
+const start = (max) =>{
+  console.log("Starteasdfasdfads")
+  fs.writeFile(`gatherings/Scraper-${state},${service},${max}.csv`, 'val1,val2,val3', function (err) {
+    if (err) throw err;
+    console.log('Saved!');
+  });
 
+  async function processBatch(itemsBatch) {
+    // Process itemsBatch array concurrently 
+    await Promise.all(itemsBatch.map(async item => {
+      console.log(item)
+      await searchGoogleMaps(item); 
+    }));
+  }
+  
+  async function main() {
+    for(let i = 0; i < queries.length; i+=5) {
+      const batch = queries.slice(i, i+5);
+      await processBatch(batch); 
+    }
+    console.log('Done!');
+  }
+
+  main();
+}
+
+//searchGoogleMaps();
 
 
 
