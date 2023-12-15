@@ -10,10 +10,14 @@
   "license": "ISC",
   "dependencies": {
     "@sparticuz/chromium": "^119.0.0",
+    "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
     "json-2-csv": "^5.0.1",
     "puppeteer": "^21.6.1",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "zcs": "^2.8.4",
+    "zipcodes": "^8.0.0"
   }
 }

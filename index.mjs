@@ -1,3 +1,12 @@
+import 'dotenv/config';
+import * as cheerio from "cheerio"; 
+import puppeteerExtra from "puppeteer-extra"; 
+import stealthPlugin from "puppeteer-extra-plugin-stealth"; 
+import converter from "json-2-csv"; 
+import chromium from "@sparticuz/chromium";
+import axios from "axios";
+import pkg from 'zcs';
+const {   getByCityState } = pkg;
 import * as readline from 'readline';
 
 const rl = readline.createInterface({
@@ -5,11 +14,19 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+let hdrs = {
+  headers: {
+    'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
+    'Content-Type': 'application/json'
+  }
+}
+
 let state;
 let service; 
 let numOfLeads;
 
 //Ask questions about search in console
+/*
 rl.question('What state would you like to search? ', stateResp => {
   state = stateResp;
 
@@ -26,8 +43,9 @@ rl.question('What state would you like to search? ', stateResp => {
   });
 
 });
+*/
 
-async function searchGoogleMaps() {
+async function searchGoogleMaps(zip) {
   try {
     const start = Date.now();
 
@@ -37,7 +55,7 @@ async function searchGoogleMaps() {
       headless: false,
       // headless: "new",
       // devtools: true,
-      executablePath: "", // your path here
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true,
     });
 
     // const browser = await puppeteerExtra.launch({
@@ -50,7 +68,7 @@ async function searchGoogleMaps() {
 
     const page = await browser.newPage();
 
-    const query = "Auto repair shops austin";
+    const query = `Auto repair shops austin`;
 
     try {
       await page.goto(
@@ -140,37 +158,57 @@ async function searchGoogleMaps() {
       const firstOfLast = lastChild.children().first();
       const lastOfLast = lastChild.children().last();
 
-      buisnesses.push({
-        placeId: `ChI${url?.split("?")?.[0]?.split("ChI")?.[1]}`,
-        address: firstOfLast?.text()?.split("·")?.[1]?.trim(),
-        category: firstOfLast?.text()?.split("·")?.[0]?.trim(),
-        phone: lastOfLast?.text()?.split("·")?.[1]?.trim(),
-        googleUrl: url,
-        bizWebsite: website,
-        storeName,
-        ratingText,
-        stars: ratingText?.split("stars")?.[0]?.trim()
-          ? Number(ratingText?.split("stars")?.[0]?.trim())
-          : null,
-        numberOfReviews: ratingText
-          ?.split("stars")?.[1]
-          ?.replace("Reviews", "")
-          ?.trim()
-          ? Number(
-              ratingText?.split("stars")?.[1]?.replace("Reviews", "")?.trim()
-            )
-          : null,
-      });
+      let phone = lastOfLast?.text()?.split("·")?.[1]?.trim()
+
+      if (!website && phone) {buisnesses.push({
+          email: `${url?.split('?')?.[0]?.split('ChI')?.[1]}@gmail.com`,
+          properties: [
+            { property: 'placeId', value: `ChI${url?.split('?')?.[0]?.split('ChI')?.[1]}` },
+            { property: 'address', value: firstOfLast?.text()?.split('·')?.[1]?.trim() },
+            { property: 'category', value: firstOfLast?.text()?.split('·')?.[0]?.trim() },
+            { property: 'phone', value: phone },
+            { property: 'googleUrl', value: url },
+            { property: 'businessName', value: storeName },
+            { property: 'ratingText', value: ratingText },
+            {
+              property: 'stars',
+              value: ratingText?.split('stars')?.[0]?.trim() ? Number(ratingText?.split('stars')?.[0]?.trim()) : null,
+            },
+            {
+              property: 'numberOfReviews',
+              value: ratingText
+                ?.split('stars')?.[1]
+                ?.replace('Reviews', '')
+                ?.trim()
+                ? Number(ratingText?.split('stars')?.[1]?.replace('Reviews', '')?.trim()) : null,
+            },
+          ],
+        });}
+      
     });
     const end = Date.now();
 
-    console.log(`time in seconds ${Math.floor((end - start) / 1000)}`);
+    let test = JSON.stringify(buisnesses);
+    console.log(test);
 
-    const csv = await converter.json2csv(buisnesses)
+    axios.post('https://api.hubapi.com/contacts/v1/contact/batch/', [ 
+      test
+    ], hdrs)
+      .then(function (response) {
+        console.log(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 
-    console.log(csv)
-    return buisnesses;
-  } catch (error) {
-    console.log("error at googleMaps", error.message);
-  }
+          return buisnesses;
+        } catch (error) {
+          console.log("error at googleMaps", error.message);
+        }
 }
+
+searchGoogleMaps();
+
+
+
+
