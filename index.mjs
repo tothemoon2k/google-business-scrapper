@@ -3,24 +3,12 @@ import * as cheerio from "cheerio";
 import puppeteerExtra from "puppeteer-extra"; 
 import stealthPlugin from "puppeteer-extra-plugin-stealth"; 
 import converter from "json-2-csv"; 
-import chromium from "@sparticuz/chromium";
+import startQuestions from "./components/questions.js"
 import csv from "csvtojson";
 import fs from "fs";
 import * as readline from 'readline';
 
 let queries = []
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-let hdrs = {
-  headers: {
-    'Authorization': `Bearer ${process.env.HUBSPOT_TOKEN}`,
-    'Content-Type': 'application/json'
-  }
-}
 
 let state;
 let service; 
@@ -28,31 +16,7 @@ let numOfLeads;
 
 //Ask questions about search in console
 
-rl.question('What state would you like to search? ', stateResp => {
-  state = stateResp;
-
-  rl.question('What service/niche should this search focus on? ', serviceResp => {
-    service = serviceResp;
-
-    rl.question('How many leads should this search gather? ', numResp => {
-      numOfLeads = numResp;
-
-      csv()
-        .fromFile('./uszips.csv') 
-        .then((json) => {
-          const objs = json.filter(r => r.state_name === state);
-          for(let obj of objs){
-            queries.push(`${service},${obj.zip},${obj.city},${obj.state_id},US`)
-          }
-          start(500)
-        });
-
-      rl.close();
-    });
-
-  });
-
-});
+startQuestions();
 
 
 

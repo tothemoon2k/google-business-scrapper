@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Scrapes google maps for business info",
   "main": "googleMaps.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
