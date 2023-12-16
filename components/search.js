@@ -3,7 +3,7 @@ import puppeteerExtra from "puppeteer-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth"; 
 import fs from "fs";
 
-async function searchGoogleMaps(query, csvLocation) {
+async function search(query, csvLocation, max) {
     let count = 0;
 
     try {
@@ -140,8 +140,10 @@ async function searchGoogleMaps(query, csvLocation) {
       const end = Date.now(); //For measuring how long query takes
 
       console.log(`${count} of ${parents.length} did not have a website`);
-
+      return(count);
     } catch (error) {
       console.log("error at googleMaps", error.message);
     }
 }
+
+export default search;
