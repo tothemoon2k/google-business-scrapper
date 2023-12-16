@@ -1,4 +1,5 @@
 import fs from "fs";
+import csv from "csvtojson";
 import search from "./search.js";
 
 const beginScrapper = async (state, service, max, csvLocation) =>{
@@ -13,32 +14,40 @@ const beginScrapper = async (state, service, max, csvLocation) =>{
   });
 
   csv()
-    .fromFile('./../zipcodes/uszips.csv') 
+    .fromFile('./zipcodes/uszips.csv') 
     .then((json) => {
       const objs = json.filter(r => r.state_name === state);
       for(let obj of objs){
         queries.push(`${service},${obj.zip},${obj.city},${obj.state_id},US`)
       }
+      console.log(queries.length, "asdf")
     });
 
   async function processBatch(itemsBatch) {
     await Promise.all(itemsBatch.map(async query => {
       let count = await search(query, csvLocation, max);
+      console.log(count, currCount, max);
+
       currCount += count;
-      if(currCount = max){
+
+      console.log(currCount, max);
+      if(currCount >= max){
         throw new Error(`Task Completed, ${max} leads gathered`)
       }
+      
     }));
   }
-  
-  queries = queries.slice(max);
 
   async function main() {
-    for(let i = 0; i < queries.length; i+=5) {
-      const batch = queries.slice(i, i+5);
-      await processBatch(batch); 
-    }
-    console.log(`Completed, gathered ${max} leads`);
+    setTimeout(async ()=>{
+      console.log(queries.length, "tesdf")
+      for(let i = 0; i < queries.length; i+=5) {
+        const batch = queries.slice(i, i+5);
+        await processBatch(batch);
+      }
+      console.log(`Completed, gathered ${max} leads`);
+    }, 2000)
+    
   }
 
   main();

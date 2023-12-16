@@ -143,6 +143,7 @@ async function search(query, csvLocation, max) {
       return(count);
     } catch (error) {
       console.log("error at googleMaps", error.message);
+      return(0);
     }
 }
 
